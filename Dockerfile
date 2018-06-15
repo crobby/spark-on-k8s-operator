@@ -29,5 +29,5 @@ RUN go generate && go build -o /usr/bin/spark-operator
 
 FROM gcr.io/ynli-k8s/spark:v2.3.0
 COPY --from=builder /usr/bin/spark-operator /usr/bin/
-COPY ./blah.sh /blah.sh
-ENTRYPOINT ["/blah.sh"]
+COPY ./entrypoint /entrypoint
+ENTRYPOINT ["/entrypoint"]

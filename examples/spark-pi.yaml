@@ -21,7 +21,7 @@ metadata:
 spec:
   type: Scala
   mode: cluster
-  image: "docker.io/radanalyticsio/radanalytics-pyspark:v0.5.3"
+  image: "docker.io/crobby/openshift-spark:2.3"
   mainClass: org.apache.spark.examples.SparkPi
   mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.11-2.3.0.jar"
   volumes:

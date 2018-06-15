@@ -41,10 +41,11 @@ spec:
       serviceAccountName: sparkoperator
       containers:
       - name: sparkoperator
-        image: spark-operator:whoami
+        image: docker.io/crobby/spark-operator:latest
         imagePullPolicy: IfNotPresent
-        command: ["/blah.sh"]
+        command: ["/entrypoint"]
         args:
+        - /usr/bin/spark-operator
         - -logtostderr
         - -enable-initializer=false
         - -check-dns=false
