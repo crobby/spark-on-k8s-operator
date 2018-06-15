@@ -41,9 +41,10 @@ spec:
       serviceAccountName: sparkoperator
       containers:
       - name: sparkoperator
-        image: gcr.io/spark-operator/spark-operator:v2.3.0-v1alpha1-latest
-        imagePullPolicy: Always
-        command: ["/usr/bin/spark-operator"]
+        image: spark-operator:whoami
+        imagePullPolicy: IfNotPresent
+        command: ["/blah.sh"]
         args:
         - -logtostderr
         - -enable-initializer=false
+        - -check-dns=false
