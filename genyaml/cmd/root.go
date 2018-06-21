@@ -31,6 +31,10 @@ var defaultKubeConfig = os.Getenv("HOME") + "/.kube/config"
 
 var Namespace string
 var KubeConfig string
+var AppName string
+var MainClass string
+var AppFile string
+var Image string
 
 var rootCmd = &cobra.Command{
 	Use:   "genyaml",
@@ -39,13 +43,20 @@ var rootCmd = &cobra.Command{
            checking status of SparkApplication objects. It also supports fetching application logs.`,
 }
 
-//func init() {
-//	rootCmd.PersistentFlags().StringVarP(&Namespace, "namespace", "n", "default",
-//		"The namespace in which the SparkApplication is to be created")
-//	rootCmd.PersistentFlags().StringVarP(&KubeConfig, "kubeconfig", "k", defaultKubeConfig,
-//		"The path to the local Kubernetes configuration file")
-//	rootCmd.AddCommand(createCmd, deleteCmd, statusCmd, logCommand, listCmd, forwardCmd)
-//}
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&Namespace, "namespace", "n", "default",
+		"The namespace in which the SparkApplication is to be created")
+	rootCmd.PersistentFlags().StringVarP(&KubeConfig, "kubeconfig", "k", defaultKubeConfig,
+		"The path to the local Kubernetes configuration file")
+	rootCmd.PersistentFlags().StringVarP(&AppName, "appname", "a", "sparkapp",
+		"The name of your Spark application")
+	rootCmd.PersistentFlags().StringVarP(&MainClass, "class", "c", "",
+		"The main class for your Spark application")
+	rootCmd.PersistentFlags().StringVarP(&AppFile, "appfile", "f", "",
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().StringVarP(&Image, "image", "i", "docker.io/crobby/openshift-spark:2.3",
+		"The Spark image to be used to run your program")
+}
 
 
 var data = `
