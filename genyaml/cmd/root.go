@@ -35,6 +35,14 @@ var AppName string
 var MainClass string
 var AppFile string
 var Image string
+var DriverCores float32
+var DriverMem string
+var DriverLabels string
+var ExecCores float32
+var ExecMem string
+var ExecLabels string
+var ExecInstances int32
+var ProgramType string
 
 var rootCmd = &cobra.Command{
 	Use:   "genyaml",
@@ -56,6 +64,22 @@ func init() {
 		"The name of your main Spark application file")
 	rootCmd.PersistentFlags().StringVarP(&Image, "image", "i", "docker.io/crobby/openshift-spark:2.3",
 		"The Spark image to be used to run your program")
+	rootCmd.PersistentFlags().Float32VarP(&DriverCores, "dcores", "", 0.1,
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().StringVarP(&DriverMem, "dmem", "", "512m",
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().StringVarP(&DriverLabels, "dlabels", "", "",
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().Float32VarP(&ExecCores, "ecores", "", 1.0,
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().StringVarP(&ExecMem, "emem", "", "512m",
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().StringVarP(&ExecLabels, "elabels", "", "",
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().Int32VarP(&ExecInstances, "einst", "", 1,
+		"The name of your main Spark application file")
+	rootCmd.PersistentFlags().StringVarP(&ProgramType, "type", "t", "Scala",
+		"The type of your Spark Application (Scala, Spark, Java, R)")
 }
 
 
@@ -102,17 +126,40 @@ spec:
 
 
 func Execute() {
-	obj := v1alpha1.SparkApplication{}
-
-	err := yaml.Unmarshal([]byte(data), &obj)
-	if err != nil {
-		log.Fatalf("error: %v", err)
+	if err := rootCmd.Execute(); err != nil {
+    	fmt.Fprintf(os.Stderr, "%v", err)
 	}
-	fmt.Printf("Text converted to object:\n%v\n\n", obj)
+
+	obj := fillObject()
+
+	//err := yaml.Unmarshal([]byte(data), &obj)
+	//if err != nil {
+	//	log.Fatalf("error: %v", err)
+	//}
+	//fmt.Printf("Text converted to object:\n%v\n\n", obj)
+
+	fmt.Printf("AppName passed in was: %s\n", AppName)
 
 	text, err := yaml.Marshal(&obj)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
 	fmt.Printf("Object converted to YAML:\n%s\n\n", string(text))
+}
+
+func fillObject() v1alpha1.SparkApplication {
+	obj := v1alpha1.SparkApplication{}
+	obj.ObjectMeta.Name = AppName
+	obj.ObjectMeta.Namespace = Namespace
+	obj.Spec.Type = "Scala"
+	obj.Spec.Image = &Image
+	obj.Spec.Driver.Cores = &DriverCores
+	obj.Spec.Driver.Memory = &DriverMem
+	//obj.Spec.Driver.Labels = DriverLabels
+	obj.Spec.Executor.Cores = &ExecCores
+	obj.Spec.Executor.Memory = &ExecMem
+	//obj.Spec.Executor.Labels = ExecLabels
+	obj.Spec.Executor.Instances = &ExecInstances
+	obj.Spec.Type = v1alpha1.ScalaApplicationType
+    return obj
 }
