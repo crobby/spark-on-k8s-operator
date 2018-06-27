@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"encoding/json"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/ghodss/yaml"
@@ -36,24 +37,26 @@ var KubeConfig string
 var AppName string
 var MainClass string
 var AppFile string
+var Arguments string
 var Image string
 var DriverCores float32
 var DriverMem string
 var DriverLabels string
+var DLabels map[string]string
 var ExecCores float32
 var ExecMem string
 var ExecLabels string
+var ELabels map[string]string
 var ExecInstances int32
 var ProgramType string
 var DVolMountStr string
 var EVolMountStr string
 var DVolumeMounts []v1.VolumeMount
 var EVolumeMounts []v1.VolumeMount
+var ServiceAccount string
 
 var rootCmd = &cobra.Command{
 	Use:   "genyaml",
-	Short: "genyaml is the command-line tool for generating yaml for the Spark Operator",
-	Long: `genyaml is the command-line tool for generating yaml for interacting with the Spark Operator`,
 }
 
 func init() {
@@ -65,6 +68,8 @@ func init() {
 		"The name of your Spark application")
 	rootCmd.PersistentFlags().StringVarP(&MainClass, "class", "c", "",
 		"The main class for your Spark application")
+	rootCmd.PersistentFlags().StringVarP(&Arguments, "args", "", "",
+		"The arguments for your Spark application")
 	rootCmd.PersistentFlags().StringVarP(&AppFile, "appfile", "f", "",
 		"The name of your main Spark application file")
 	rootCmd.PersistentFlags().StringVarP(&Image, "image", "i", "docker.io/crobby/openshift-spark:2.3",
@@ -89,6 +94,8 @@ func init() {
 		"The volume mounts for your executors")
 	rootCmd.PersistentFlags().StringVarP(&DVolMountStr, "dvol", "", "",
 		"The volume mounts for your driver")
+	rootCmd.PersistentFlags().StringVarP(&ServiceAccount, "sa", "", "spark",
+		"The service account for your driver, 'spark' by default")
 }
 
 
@@ -99,42 +106,64 @@ func Execute() {
 
 	obj := fillObject()
 
-	//err := yaml.Unmarshal([]byte(data), &obj)
-	//if err != nil {
-	//	log.Fatalf("error: %v", err)
-	//}
-	//fmt.Printf("Text converted to object:\n%v\n\n", obj)
-
-	fmt.Printf("AppName passed in was: %s\n", AppName)
-
 	text, err := yaml.Marshal(&obj)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
-	fmt.Printf("Object converted to YAML:\n%s\n\n", string(text))
+	fmt.Printf("\n%s\n\n", string(text))
 }
 
 func fillObject() v1alpha1.SparkApplication {
 	obj := v1alpha1.SparkApplication{}
 	obj.ObjectMeta.Name = AppName
+	obj.Spec.Mode = v1alpha1.ClusterMode // could make this variable as well
+	obj.Spec.RestartPolicy = v1alpha1.Never // could make this variable as well
 	obj.ObjectMeta.Namespace = Namespace
-	obj.Spec.Type = "Scala"
+	obj.Spec.Type = v1alpha1.ScalaApplicationType // could make this variable as well
 	obj.Spec.Image = &Image
 	obj.Spec.Driver.Cores = &DriverCores
 	obj.Spec.Driver.Memory = &DriverMem
-	//obj.Spec.Driver.Labels = DriverLabels
 	obj.Spec.Executor.Cores = &ExecCores
 	obj.Spec.Executor.Memory = &ExecMem
-	//obj.Spec.Executor.Labels = ExecLabels
+	obj.Spec.Driver.ServiceAccount = &ServiceAccount
 	obj.Spec.Executor.Instances = &ExecInstances
 	obj.Spec.Type = v1alpha1.ScalaApplicationType
+	obj.Spec.Arguments = strings.Split(Arguments, ",")
 	var dVolMounts []v1.VolumeMount
-	err := json.Unmarshal([]byte(DVolMountStr), &dVolMounts)
-	fmt.Println(err)
-	var eVolMounts []v1.VolumeMount
-	err := json.Unmarshal([]byte(EVolMountStr), eVolMounts)
-	fmt.Println(err)
+	if len(DVolMountStr) > 0 {
+		err := json.Unmarshal([]byte(DVolMountStr), &dVolMounts)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 	obj.Spec.Driver.VolumeMounts = dVolMounts
+
+	var eVolMounts []v1.VolumeMount
+	if len(EVolMountStr) > 0 {
+		err := json.Unmarshal([]byte(EVolMountStr), eVolMounts)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 	obj.Spec.Executor.VolumeMounts = eVolMounts
+
+	var dLabels map[string]string
+	if len(DriverLabels) > 0 {
+		err := json.Unmarshal([]byte(DriverLabels), &dLabels)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	obj.Spec.Driver.Labels = dLabels
+
+	var eLabels map[string]string
+	if len(ExecLabels) > 0 {
+		err := json.Unmarshal([]byte(ExecLabels), &eLabels)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	obj.Spec.Executor.Labels = eLabels
+
     return obj
 }
