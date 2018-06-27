@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Google LLC
+Copyright 2018 Red Hat Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -75,19 +75,19 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&Image, "image", "i", "docker.io/crobby/openshift-spark:2.3",
 		"The Spark image to be used to run your program")
 	rootCmd.PersistentFlags().Float32VarP(&DriverCores, "dcores", "", 0.1,
-		"The name of your main Spark application file")
+		"The number of cores to request for your driver program")
 	rootCmd.PersistentFlags().StringVarP(&DriverMem, "dmem", "", "512m",
-		"The name of your main Spark application file")
+		"The amount of memory to request for your driver program")
 	rootCmd.PersistentFlags().StringVarP(&DriverLabels, "dlabels", "", "",
-		"The name of your main Spark application file")
+		"A set of labels for your driver instance")
 	rootCmd.PersistentFlags().Float32VarP(&ExecCores, "ecores", "", 1.0,
-		"The name of your main Spark application file")
+		"The number of cores to request for your executors")
 	rootCmd.PersistentFlags().StringVarP(&ExecMem, "emem", "", "512m",
-		"The name of your main Spark application file")
+		"The amount of memory to request for your executors")
 	rootCmd.PersistentFlags().StringVarP(&ExecLabels, "elabels", "", "",
-		"The name of your main Spark application file")
+		"A set of labels for your executor instances")
 	rootCmd.PersistentFlags().Int32VarP(&ExecInstances, "einst", "", 1,
-		"The name of your main Spark application file")
+		"The number of executor instances to launch")
 	rootCmd.PersistentFlags().StringVarP(&ProgramType, "type", "t", "Scala",
 		"The type of your Spark Application (Scala, Spark, Java, R)")
 	rootCmd.PersistentFlags().StringVarP(&EVolMountStr, "evol", "", "",
@@ -116,6 +116,7 @@ func Execute() {
 func fillObject() v1alpha1.SparkApplication {
 	obj := v1alpha1.SparkApplication{}
 	obj.ObjectMeta.Name = AppName
+	obj.Spec.MainApplicationFile = &AppFile
 	obj.Spec.Mode = v1alpha1.ClusterMode // could make this variable as well
 	obj.Spec.RestartPolicy = v1alpha1.Never // could make this variable as well
 	obj.ObjectMeta.Namespace = Namespace
@@ -128,7 +129,7 @@ func fillObject() v1alpha1.SparkApplication {
 	obj.Spec.Driver.ServiceAccount = &ServiceAccount
 	obj.Spec.Executor.Instances = &ExecInstances
 	obj.Spec.Type = v1alpha1.ScalaApplicationType
-	obj.Spec.Arguments = strings.Split(Arguments, ",")
+	obj.Spec.Arguments = strings.Split(Arguments, ",") // do something better here for ints and such
 	var dVolMounts []v1.VolumeMount
 	if len(DVolMountStr) > 0 {
 		err := json.Unmarshal([]byte(DVolMountStr), &dVolMounts)
@@ -140,7 +141,7 @@ func fillObject() v1alpha1.SparkApplication {
 
 	var eVolMounts []v1.VolumeMount
 	if len(EVolMountStr) > 0 {
-		err := json.Unmarshal([]byte(EVolMountStr), eVolMounts)
+		err := json.Unmarshal([]byte(EVolMountStr), &eVolMounts)
 		if err != nil {
 			fmt.Println(err)
 		}
