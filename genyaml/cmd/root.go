@@ -115,10 +115,21 @@ func Execute() {
 
 func fillObject() v1alpha1.SparkApplication {
 	obj := v1alpha1.SparkApplication{}
+	setSimpleFields(&obj)
+
+	// set up the fields that need a bit more love
+	obj.Spec.Arguments = strings.Split(Arguments, ",") // do something better here for ints and such
+	obj.Spec.Mode = v1alpha1.ClusterMode               // could make this variable as well
+	obj.Spec.RestartPolicy = v1alpha1.Never            // could make this variable as well
+	setMounts(&obj)
+	setLabels(&obj)
+	setType(&obj)
+	return obj
+}
+
+func setSimpleFields(obj *v1alpha1.SparkApplication) {
 	obj.ObjectMeta.Name = AppName
 	obj.Spec.MainApplicationFile = &AppFile
-	obj.Spec.Mode = v1alpha1.ClusterMode // could make this variable as well
-	obj.Spec.RestartPolicy = v1alpha1.Never // could make this variable as well
 	obj.ObjectMeta.Namespace = Namespace
 	obj.Spec.Image = &Image
 	obj.Spec.Driver.Cores = &DriverCores
@@ -127,44 +138,9 @@ func fillObject() v1alpha1.SparkApplication {
 	obj.Spec.Executor.Memory = &ExecMem
 	obj.Spec.Driver.ServiceAccount = &ServiceAccount
 	obj.Spec.Executor.Instances = &ExecInstances
-	obj.Spec.Type = v1alpha1.ScalaApplicationType
-	obj.Spec.Arguments = strings.Split(Arguments, ",") // do something better here for ints and such
-	var dVolMounts []v1.VolumeMount
-	if len(DVolMountStr) > 0 {
-		err := json.Unmarshal([]byte(DVolMountStr), &dVolMounts)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-	obj.Spec.Driver.VolumeMounts = dVolMounts
+}
 
-	var eVolMounts []v1.VolumeMount
-	if len(EVolMountStr) > 0 {
-		err := json.Unmarshal([]byte(EVolMountStr), &eVolMounts)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-	obj.Spec.Executor.VolumeMounts = eVolMounts
-
-	var dLabels map[string]string
-	if len(DriverLabels) > 0 {
-		err := json.Unmarshal([]byte(DriverLabels), &dLabels)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-	obj.Spec.Driver.Labels = dLabels
-
-	var eLabels map[string]string
-	if len(ExecLabels) > 0 {
-		err := json.Unmarshal([]byte(ExecLabels), &eLabels)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-	obj.Spec.Executor.Labels = eLabels
-
+func setType(obj *v1alpha1.SparkApplication) {
 	var givenType = strings.ToLower(ProgramType)
 	switch (givenType) {
 	case "scala":
@@ -178,5 +154,42 @@ func fillObject() v1alpha1.SparkApplication {
 	default:
 		obj.Spec.Type = v1alpha1.ScalaApplicationType
 	}
-    return obj
+}
+
+func setLabels(obj *v1alpha1.SparkApplication) {
+	var dLabels map[string]string
+	if len(DriverLabels) > 0 {
+		err := json.Unmarshal([]byte(DriverLabels), &dLabels)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	obj.Spec.Driver.Labels = dLabels
+	var eLabels map[string]string
+	if len(ExecLabels) > 0 {
+		err := json.Unmarshal([]byte(ExecLabels), &eLabels)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	obj.Spec.Executor.Labels = eLabels
+}
+
+func setMounts(obj *v1alpha1.SparkApplication) {
+	var dVolMounts []v1.VolumeMount
+	if len(DVolMountStr) > 0 {
+		err := json.Unmarshal([]byte(DVolMountStr), &dVolMounts)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	obj.Spec.Driver.VolumeMounts = dVolMounts
+	var eVolMounts []v1.VolumeMount
+	if len(EVolMountStr) > 0 {
+		err := json.Unmarshal([]byte(EVolMountStr), &eVolMounts)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	obj.Spec.Executor.VolumeMounts = eVolMounts
 }
