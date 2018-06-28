@@ -30,14 +30,12 @@ import (
 	"k8s.io/api/core/v1"
 )
 
-var defaultKubeConfig = os.Getenv("HOME") + "/.kube/config"
-
 var Namespace string
-var KubeConfig string
 var AppName string
 var MainClass string
 var AppFile string
 var Arguments string
+var ClusterType string
 var Image string
 var DriverCores float32
 var DriverMem string
@@ -54,6 +52,7 @@ var EVolMountStr string
 var DVolumeMounts []v1.VolumeMount
 var EVolumeMounts []v1.VolumeMount
 var ServiceAccount string
+var RestartPolicy string
 
 var rootCmd = &cobra.Command{
 	Use:   "genyaml",
@@ -62,8 +61,6 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&Namespace, "namespace", "n", "default",
 		"The namespace in which the SparkApplication is to be created")
-	rootCmd.PersistentFlags().StringVarP(&KubeConfig, "kubeconfig", "k", defaultKubeConfig,
-		"The path to the local Kubernetes configuration file")
 	rootCmd.PersistentFlags().StringVarP(&AppName, "appname", "a", "sparkapp",
 		"The name of your Spark application")
 	rootCmd.PersistentFlags().StringVarP(&MainClass, "class", "c", "",
@@ -96,6 +93,8 @@ func init() {
 		"The volume mounts for your driver")
 	rootCmd.PersistentFlags().StringVarP(&ServiceAccount, "sa", "", "spark",
 		"The service account for your driver, 'spark' by default")
+	rootCmd.PersistentFlags().StringVarP(&RestartPolicy, "restart", "", "",
+		"The restart policy for your program (always, never, onfailure)")
 }
 
 
@@ -115,12 +114,10 @@ func Execute() {
 
 func fillObject() v1alpha1.SparkApplication {
 	obj := v1alpha1.SparkApplication{}
-	setSimpleFields(&obj)
-
-	// set up the fields that need a bit more love
-	obj.Spec.Arguments = strings.Split(Arguments, ",") // do something better here for ints and such
-	obj.Spec.Mode = v1alpha1.ClusterMode               // could make this variable as well
-	obj.Spec.RestartPolicy = v1alpha1.Never            // could make this variable as well
+	setSimpleFields(&obj) // fields where we just take whatever value given
+	setProgramArgs(&obj)
+	setRestartPolicy(&obj)
+	setClusterMode(&obj)
 	setMounts(&obj)
 	setLabels(&obj)
 	setType(&obj)
@@ -138,6 +135,40 @@ func setSimpleFields(obj *v1alpha1.SparkApplication) {
 	obj.Spec.Executor.Memory = &ExecMem
 	obj.Spec.Driver.ServiceAccount = &ServiceAccount
 	obj.Spec.Executor.Instances = &ExecInstances
+}
+
+func setProgramArgs(obj *v1alpha1.SparkApplication) {
+	obj.Spec.Arguments = strings.Split(Arguments, ",") // do something better here for ints and such
+}
+
+func setRestartPolicy(obj *v1alpha1.SparkApplication) {
+	var givenRestart = strings.ToLower(RestartPolicy)
+	switch (givenRestart) {
+	case "":
+		obj.Spec.RestartPolicy = v1alpha1.Undefined
+	case "never":
+		obj.Spec.RestartPolicy = v1alpha1.Never
+	case "onfailure":
+		obj.Spec.RestartPolicy = v1alpha1.OnFailure
+	case "always":
+		obj.Spec.RestartPolicy = v1alpha1.Always
+	default:
+		obj.Spec.RestartPolicy = v1alpha1.Undefined
+	}
+}
+
+func setClusterMode(obj *v1alpha1.SparkApplication) {
+	var givenMode = strings.ToLower(ClusterType)
+	switch (givenMode) {
+	case "cluster":
+		obj.Spec.Mode = v1alpha1.ClusterMode
+	case "client":
+		obj.Spec.Mode = v1alpha1.ClientMode
+	case "in-cluster-client":
+		obj.Spec.Mode = v1alpha1.InClusterClientMode
+	default:
+		obj.Spec.Mode = v1alpha1.ClusterMode
+	}
 }
 
 func setType(obj *v1alpha1.SparkApplication) {
