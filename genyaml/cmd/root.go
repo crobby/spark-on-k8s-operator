@@ -120,7 +120,6 @@ func fillObject() v1alpha1.SparkApplication {
 	obj.Spec.Mode = v1alpha1.ClusterMode // could make this variable as well
 	obj.Spec.RestartPolicy = v1alpha1.Never // could make this variable as well
 	obj.ObjectMeta.Namespace = Namespace
-	obj.Spec.Type = v1alpha1.ScalaApplicationType // could make this variable as well
 	obj.Spec.Image = &Image
 	obj.Spec.Driver.Cores = &DriverCores
 	obj.Spec.Driver.Memory = &DriverMem
@@ -166,5 +165,18 @@ func fillObject() v1alpha1.SparkApplication {
 	}
 	obj.Spec.Executor.Labels = eLabels
 
+	var givenType = strings.ToLower(ProgramType)
+	switch (givenType) {
+	case "scala":
+		obj.Spec.Type = v1alpha1.ScalaApplicationType
+	case "python":
+		obj.Spec.Type = v1alpha1.PythonApplicationType
+	case "java":
+		obj.Spec.Type = v1alpha1.JavaApplicationType
+	case "r":
+		obj.Spec.Type = v1alpha1.RApplocationType
+	default:
+		obj.Spec.Type = v1alpha1.ScalaApplicationType
+	}
     return obj
 }
