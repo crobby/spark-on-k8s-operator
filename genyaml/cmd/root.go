@@ -49,6 +49,8 @@ var ExecInstances int32
 var ProgramType string
 var DVolMountStr string
 var EVolMountStr string
+var VolStr string
+var Volumes []v1.Volume
 var DVolumeMounts []v1.VolumeMount
 var EVolumeMounts []v1.VolumeMount
 var ServiceAccount string
@@ -87,6 +89,8 @@ func init() {
 		"The number of executor instances to launch")
 	rootCmd.PersistentFlags().StringVarP(&ProgramType, "type", "t", "Scala",
 		"The type of your Spark Application (Scala, Spark, Java, R)")
+	rootCmd.PersistentFlags().StringVarP(&VolStr, "vols", "", "",
+		"The volume mounts for your executors")
 	rootCmd.PersistentFlags().StringVarP(&EVolMountStr, "evol", "", "",
 		"The volume mounts for your executors")
 	rootCmd.PersistentFlags().StringVarP(&DVolMountStr, "dvol", "", "",
@@ -118,15 +122,28 @@ func fillObject() v1alpha1.SparkApplication {
 	setProgramArgs(&obj)
 	setRestartPolicy(&obj)
 	setClusterMode(&obj)
+	setVolumes(&obj)
 	setMounts(&obj)
 	setLabels(&obj)
 	setType(&obj)
 	return obj
 }
 
+func setVolumes(obj *v1alpha1.SparkApplication) {
+	var vols []v1.Volume
+	if len(VolStr) > 0 {
+		err := json.Unmarshal([]byte(VolStr), &vols)
+		if err != nil {
+			fmt.Println(err)
+		}
+		obj.Spec.Volumes = vols
+	}
+}
+
 func setSimpleFields(obj *v1alpha1.SparkApplication) {
 	obj.ObjectMeta.Name = AppName
 	obj.Spec.MainApplicationFile = &AppFile
+	obj.Spec.MainClass = &MainClass
 	obj.ObjectMeta.Namespace = Namespace
 	obj.Spec.Image = &Image
 	obj.Spec.Driver.Cores = &DriverCores
