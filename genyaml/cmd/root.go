@@ -138,7 +138,7 @@ func setSimpleFields(obj *v1alpha1.SparkApplication) {
 }
 
 func setProgramArgs(obj *v1alpha1.SparkApplication) {
-	obj.Spec.Arguments = strings.Split(Arguments, ",") // do something better here for ints and such
+	obj.Spec.Arguments = strings.Split(Arguments, ",")
 }
 
 func setRestartPolicy(obj *v1alpha1.SparkApplication) {
